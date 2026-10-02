@@ -13,6 +13,8 @@ const TRAJECTORY_STYLE = {
   stateColor: 0x719fff,
   stateSize: 2,
   expandedOpacity: 0.45,
+  droneScale: 2,
+  droneLoopSeconds: 10,
   edgeColors: {
     flight: 0x719fff,
     maneuver: 0xffae62,
@@ -26,7 +28,8 @@ const TRAJECTORY_STYLE = {
  * @param {import('three').Group} world Group XYZ chưa xoay/scale riêng các điểm.
  * @param {number[][]} trajectory [[x,y,z], ...] theo voxel; [] nếu không có đường.
  * @param {object|null} expandedGraph Tùy chọn: result.expandedGraph để vẽ sơ đồ trạng thái.
- * @returns {{setVisible: function, clear: function}} Layer; name='trajectory' hoặc 'expanded'.
+ * @returns {{setVisible: function, setFlying: function, clear: function}} Layer.
+ * setFlying(enabled, duration=7) bay hết quỹ đạo trong duration giây rồi lặp lại.
  * clear() gỡ layer và giải phóng tài nguyên GPU trước khi vẽ nghiệm khác.
  */
 export function plotTrajectory(world, trajectory, expandedGraph = null) {
@@ -119,11 +122,74 @@ export function plotTrajectory(world, trajectory, expandedGraph = null) {
     routeGroup.add(marker);
   }
 
+  // Drone minh hoạ tạo từ geometry có sẵn, không tải thêm model.
+  const drone = new THREE.Group();
+  drone.name = 'drone';
+  drone.visible = false;
+  drone.scale.setScalar(TRAJECTORY_STYLE.droneScale);
+  caseGroup.add(drone);
+  function dronePart(geometry, color) {
+    const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color }));
+    drone.add(mesh);
+    return mesh;
+  }
+  dronePart(new THREE.BoxGeometry(4, 2, 1), 0xffdf6f);
+  for (const angle of [-Math.PI / 4, Math.PI / 4]) {
+    dronePart(new THREE.BoxGeometry(10, 0.4, 0.4), 0xdcecff).rotation.z = angle;
+  }
+  const rotors = [];
+  for (const x of [-3.5, 3.5]) {
+    for (const y of [-3.5, 3.5]) {
+      dronePart(new THREE.TorusGeometry(1.7, 0.18, 6, 16), 0xdcecff).position.set(x, y, 0.5);
+      const blade = dronePart(new THREE.BoxGeometry(3.2, 0.25, 0.12), 0xb4f277);
+      blade.position.set(x, y, 0.5);
+      rotors.push(blade);
+    }
+  }
+  dronePart(new THREE.BoxGeometry(0.6, 1.5, 0.6), 0xb4f277).position.x = 2;
+  // Nâng hình minh hoạ nhẹ để tube trajectory không che thân drone.
+  drone.children.forEach(part => { part.position.z += 1; });
+
+  const pathPoints = trajectory.map(point => new THREE.Vector3(...point));
+  const distances = [0];
+  for (let index = 1; index < pathPoints.length; index++) {
+    // Mét theo lưới gốc giúp tốc độ đều giữa các đoạn; mỗi vòng có thời gian cố định.
+    const delta = pathPoints[index].clone().sub(pathPoints[index - 1]);
+    distances.push(distances.at(-1) + Math.hypot(delta.x * 4, delta.y * 4, delta.z * 1.5));
+  }
+  const totalDistance = distances.at(-1);
+  let animationFrame = null;
+  function setFlying(enabled, duration = TRAJECTORY_STYLE.droneLoopSeconds) {
+    if (!Number.isFinite(duration) || duration <= 0) throw new Error('Drone animation duration must be positive.');
+    if (animationFrame !== null) cancelAnimationFrame(animationFrame);
+    animationFrame = null;
+    drone.visible = enabled && totalDistance > 0;
+    if (!drone.visible) return;
+    drone.position.copy(pathPoints[0]);
+    let started = null;
+    function animate(timestamp) {
+      started ??= timestamp;
+      const elapsed = (timestamp - started) / 1000;
+      const distance = (elapsed % duration) / duration * totalDistance;
+      let segment = 1;
+      while (segment < distances.length - 1 && distances[segment] <= distance) segment++;
+      const start = pathPoints[segment - 1], end = pathPoints[segment];
+      const fraction = (distance - distances[segment - 1]) / (distances[segment] - distances[segment - 1]);
+      drone.position.lerpVectors(start, end, fraction);
+      drone.rotation.z = Math.atan2(end.y - start.y, end.x - start.x);
+      rotors.forEach(blade => { blade.rotation.z = elapsed * 40; });
+      animationFrame = requestAnimationFrame(animate);
+    }
+    animationFrame = requestAnimationFrame(animate);
+  }
+
   return {
+    setFlying,
     setVisible(name, visible) {
       caseGroup.getObjectByName(name).visible = visible;
     },
     clear() {
+      setFlying(false);
       // Gỡ object khỏi scene chưa đủ: phải giải phóng buffer/material GPU.
       world.remove(caseGroup);
       caseGroup.traverse(child => {
@@ -159,6 +225,7 @@ export function bindTrajectoryControls(world, data) {
   for (const name of ['trajectory', 'expanded']) {
     element(`case-${name}`).onchange = syncVisibility;
   }
+  element('case-drone').onchange = () => layer?.setFlying(element('case-drone').checked);
 
   function solve() {
     solveButton.disabled = true;
@@ -182,6 +249,7 @@ export function bindTrajectoryControls(world, data) {
       layer?.clear();
       layer = plotTrajectory(world, result.trajectory, result.expandedGraph);
       syncVisibility();
+      layer.setFlying(element('case-drone').checked);
 
       const graph = result.expandedGraph;
       const lines = [
