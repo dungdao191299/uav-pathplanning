@@ -1,0 +1,32 @@
+{
+  "format": 3,
+  "shape": [
+    300,
+    300,
+    160
+  ],
+  "triangles": 19578,
+  "occupied": 496502,
+  "stride": 4,
+  "channels": [
+    0,
+    2,
+    1
+  ],
+  "verticalAxis": 2,
+  "sources": [
+    {
+      "name": "building_case_0.npy",
+      "size": 14400128,
+      "mtime": 1790880706319.6497
+    },
+    {
+      "name": "mean_case_0.npy",
+      "size": 230400128,
+      "mtime": 1790880708443.2354
+    }
+  ],
+  "totalBytes": 32616250,
+  "buildingBytes": 1058104,
+  "buildingCompressedBytes": 194511
+}

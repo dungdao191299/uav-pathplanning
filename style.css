@@ -1,0 +1,373 @@
+/* Layout, controls và 3D viewport. Mỗi property một dòng để dễ chỉnh. */
+:root {
+  font-family: Inter,Segoe UI,Arial,sans-serif;
+  color: #dbe4ef;
+  background: #09111d;
+  color-scheme: dark;
+  font-size: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+header {
+  height: 72px;
+  border-bottom: 1px solid #243042;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 30px;
+  background: #0e1826;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 750;
+  letter-spacing: 2px;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  background: #b4f277;
+  color: #132015;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  font-size: 27px;
+}
+
+main {
+  display: grid;
+  grid-template-columns: 310px 1fr;
+  height: calc(100dvh - 72px);
+}
+
+aside {
+  padding: 28px 25px;
+  overflow: auto;
+  border-right: 1px solid #243042;
+  background: #101a29;
+}
+
+aside details {
+  border-top: 1px solid #2a3545;
+  padding: 16px 0;
+}
+
+aside summary {
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+aside details[open] summary {
+  margin-bottom: 18px;
+}
+
+aside summary:focus-visible {
+  outline: 2px solid #b4f277;
+  outline-offset: 3px;
+}
+
+aside summary span {
+  font-size: 10px;
+  color: #78906e;
+  margin-right: 9px;
+}
+
+label {
+  display: block;
+  color: #b8c5d6;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+select {
+  margin-top: 8px;
+  display: block;
+  width: 100%;
+  background: #172435;
+  border: 1px solid #344154;
+  border-radius: 6px;
+  padding: 9px;
+  color: #e2eaf3;
+  font: inherit;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.point-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  margin: 0 0 16px;
+}
+
+.point-inputs legend {
+  font-size: 12px;
+  color: #b8c5d6;
+  margin-bottom: 8px;
+}
+
+.point-inputs input {
+  min-width: 0;
+  width: 100%;
+  padding: 8px 5px;
+  background: #172435;
+  border: 1px solid #344154;
+  border-radius: 6px;
+  color: #e2eaf3;
+  font: inherit;
+  font-size: 12px;
+}
+
+input[type=checkbox] {
+  width: 18px;
+  height: 18px;
+  accent-color: #b4f277;
+}
+
+input[type=range] {
+  display: block;
+  width: 100%;
+  margin: 13px 0 0;
+  accent-color: #b4f277;
+  cursor: pointer;
+}
+
+.range-label output {
+  float: right;
+  color: #b4f277;
+  font-size: 11px;
+}
+
+#viewport {
+  position: relative;
+  overflow: hidden;
+  min-height: 400px;
+  background: #09111d;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.view-actions {
+  position: absolute;
+  right: 24px;
+  top: 26px;
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  background: #142131e8;
+  border: 1px solid #344154;
+  border-radius: 6px;
+  color: #bdcddd;
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #26374b;
+}
+
+button:focus-visible,select:focus-visible,input:focus-visible {
+  outline: 2px solid #b4f277;
+  outline-offset: 3px;
+}
+
+.legend {
+  position: absolute;
+  left: 28px;
+  bottom: 66px;
+  width: 215px;
+  padding: 15px;
+  background: #101c2be8;
+  border: 1px solid #2c3b4e;
+  border-radius: 8px;
+}
+
+.legend>div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #b8c7d9;
+}
+
+.legend .unit {
+  color: #6f829c;
+  font-size: 9px;
+}
+
+.gradient {
+  height: 7px;
+  margin: 12px 0 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg,#245bdb,#23dad4,#b2f24b,#f04832);
+}
+
+.legend small {
+  display: block;
+  font-size: 9px;
+  line-height: 1.5;
+  color: #788aa2;
+  margin-top: 9px;
+}
+
+.navigation {
+  position: absolute;
+  left: 28px;
+  bottom: 24px;
+  font-size: 10px;
+  color: #788aa2;
+}
+
+.navigation span {
+  padding: 0 8px;
+  color: #52627a;
+}
+
+.axis-key {
+  position: absolute;
+  bottom: 25px;
+  right: 25px;
+  display: flex;
+  gap: 14px;
+  font-size: 10px;
+}
+
+.axis-key .x {
+  color: #f8877c;
+}
+
+.axis-key .y {
+  color: #b4f277;
+}
+
+.axis-key .z {
+  color: #7ba5ff;
+}
+
+#status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  padding: 16px 22px;
+  background: #172436ef;
+  border: 1px solid #43546d;
+  border-radius: 8px;
+  max-width: 90%;
+  font-size: 13px;
+  text-align: center;
+}
+
+#status:empty {
+  display: none;
+}
+
+[disabled] {
+  opacity: .45;
+  cursor: default;
+}
+
+@media(max-width:850px) {
+  main {
+    grid-template-columns: 260px 1fr;
+  }
+
+  aside {
+    padding: 22px 18px;
+  }
+
+  .view-actions {
+    top: 106px;
+    left: 24px;
+    right: auto;
+  }
+
+  .navigation {
+    max-width: 220px;
+    line-height: 1.7;
+  }
+
+  .axis-key {
+    bottom: 38px;
+  }
+
+}
+
+@media(max-width:600px) {
+  header {
+    padding: 0 16px;
+    height: 60px;
+  }
+
+  .brand {
+    font-size: 12px;
+  }
+
+  main {
+    height: auto;
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  #viewport {
+    height: 65dvh;
+    min-height: 420px;
+  }
+
+  aside {
+    border-right: 0;
+    border-top: 1px solid #243042;
+  }
+
+  .navigation {
+    display: none;
+  }
+
+  .legend {
+    bottom: 20px;
+  }
+
+}
+
+#graphStatus {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #8e9eb4;
+  margin: 12px 0;
+}
+
+#caseStatus {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #8e9eb4;
+}
+
+#caseStatus {
+  margin: 12px 0;
+  white-space: pre-line;
+}

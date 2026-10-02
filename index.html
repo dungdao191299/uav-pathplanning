@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>UAV Pathplanning</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./vendor/three.js",
+          "three/addons/controls/OrbitControls.js": "./vendor/OrbitControls.js",
+          "three/addons/loaders/GLTFLoader.js": "./vendor/loaders/GLTFLoader.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <span class="mark"> ↗ </span>
+        UAV Pathplanning
+      </div>
+    </header>
+    <main>
+      <aside>
+        <details>
+          <summary>
+            <span> 01 </span>
+            Display
+          </summary>
+          <label class="toggle">
+            <span>Adaptive boxes</span>
+            <input id="graph-boxes" type="checkbox" checked />
+          </label>
+          <label class="toggle">
+            <span>Graph nodes</span>
+            <input id="graph-nodes" type="checkbox" checked />
+          </label>
+          <label class="toggle">
+            <span>Graph edges</span>
+            <input id="graph-edges" type="checkbox" checked />
+          </label>
+          <div id="graphStatus" role="status" aria-live="polite">Loading saved graph…</div>
+          <label>
+            View mode
+            <select id="mode">
+              <option value="slice">Slice</option>
+              <option value="volume">Full 3D domain</option>
+            </select>
+          </label>
+          <label>
+            Scale (X × Y × Z)
+            <select id="scale">
+              <option value="1,1,1">Original (1 × 1 × 1)</option>
+              <option value="4,4,1.5">Scaled (4 × 4 × 1.5)</option>
+            </select>
+          </label>
+        </details>
+        <details>
+          <summary>
+            <span> 02 </span>
+            Slice & density
+          </summary>
+          <label>
+            Slice axis
+            <select id="axis">
+              <option value="0">Axis 0 · X</option>
+              <option value="1">Axis 1 · Y</option>
+              <option value="2" selected>Axis 2 · Z</option>
+            </select>
+          </label>
+          <label class="range-label">
+            Slice position
+            <output id="layerValue"> 20 </output>
+            <input id="layer" type="range" min="0" max="159" value="20" />
+          </label>
+          <label class="range-label">
+            Sampling step
+            <output id="stepValue"> 8 cells </output>
+            <input id="step" type="range" min="4" max="24" value="8" step="4" />
+          </label>
+          <label class="range-label">
+            Arrow length
+            <output id="lengthValue"> 6 cells </output>
+            <input id="length" type="range" min="2" max="15" value="6" />
+          </label>
+        </details>
+        <details>
+          <summary><span>03</span>Pathplaning</summary>
+          <fieldset class="point-inputs">
+            <legend>Start (X, Y, Z · voxel)</legend>
+            <input id="start-x" type="number" step="any" aria-label="Start X" placeholder="X" required />
+            <input id="start-y" type="number" step="any" aria-label="Start Y" placeholder="Y" required />
+            <input id="start-z" type="number" step="any" aria-label="Start Z" placeholder="Z" required />
+          </fieldset>
+          <fieldset class="point-inputs">
+            <legend>End (X, Y, Z · voxel)</legend>
+            <input id="end-x" type="number" step="any" aria-label="End X" placeholder="X" required />
+            <input id="end-y" type="number" step="any" aria-label="End Y" placeholder="Y" required />
+            <input id="end-z" type="number" step="any" aria-label="End Z" placeholder="Z" required />
+          </fieldset>
+          <label class="toggle">
+            <span>Turning angle limit</span>
+            <input id="constraint-turningAngle" type="checkbox" />
+          </label>
+          <label class="toggle">
+            <span>Start → End angle &lt;90°</span>
+            <input id="constraint-trajectoryAngle" type="checkbox" />
+          </label>
+          <label class="toggle">
+            <span>Thrust limit</span>
+            <input id="constraint-thrust" type="checkbox" />
+          </label>
+          <label class="toggle">
+            <span>Trajectory</span>
+            <input id="case-trajectory" type="checkbox" checked />
+          </label>
+          <label class="toggle">
+            <span>Expanded graph</span>
+            <input id="case-expanded" type="checkbox" />
+          </label>
+          <button id="solveCase" type="button">Solve</button>
+          <button id="downloadCase" type="button" disabled>Download result</button>
+          <div id="caseStatus" role="status" aria-live="polite">Loading case 1…</div>
+        </details>
+      </aside>
+      <div id="viewport" aria-label="Interactive 3D space">
+       
+        <div class="view-actions">
+          <button id="home" title="Reset the camera to its initial view">
+            ↺ Reset view
+          </button>
+          <button id="top">Top view</button>
+        </div>
+        <div id="status" role="status" aria-live="polite">
+          Loading 3D model…
+        </div>
+        <div class="legend">
+          <div>
+            <span> Velocity magnitude </span>
+            <span class="unit"> data units </span>
+          </div>
+          <div class="gradient"></div>
+          <div>
+            <span id="speedMin"> 0 </span>
+            <span id="speedMax"> — </span>
+          </div>
+          <small> Color scale follows the current samples </small>
+        </div>
+        <div class="navigation">
+          Drag to orbit
+          <span> · </span>
+          Scroll to zoom
+          <span> · </span>
+          Right-drag to pan
+        </div>
+        <div class="axis-key">
+          <b class="x"> X / 0 </b>
+          <b class="y"> Y / 1 </b>
+          <b class="z"> Z / 2 </b>
+        </div>
+      </div>
+    </main>
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>
