@@ -107,7 +107,7 @@ export async function bindControls(meta, view, wind) {
   let field;
 
   function drawWind() {
-    const max = wind.draw(rows, Number($('length').value), true);
+    const max = wind.draw(rows, Number($('length').value), $('wind').checked);
     $('speedMax').textContent = max.toFixed(2);
   }
 
@@ -157,6 +157,7 @@ export async function bindControls(meta, view, wind) {
   $('home').onclick = () => view.home();
   $('top').onclick = () => view.home(true);
   $('scale').onchange = () => view.setScale($('scale').value.split(',').map(Number));
+  $('wind').onchange = () => wind.setVisible($('wind').checked);
 
   for (const id of ['axis', 'layer', 'step', 'mode']) $(id).onchange = updateWind;
   for (const id of ['layer', 'step']) $(id).oninput = syncLabels;
