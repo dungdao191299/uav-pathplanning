@@ -4,11 +4,11 @@ import * as THREE from 'three';
 // edgeColors theo edgeTypeNames: 0=adaptive, 1=skeleton, 2=bridge.
 const GRAPH_STYLE = {
   freeBoxColor: "gray",
-  boxOpacity: 0.35,
+  boxOpacity: 0.1,
   nodeColor: 0xb4f277,
   nodeSize: 2,
   edgeColors: [0x3bcfdd, 0x3bcfdd, 0x3bcfdd],
-  edgeOpacity: 0.5,
+  edgeOpacity: 0.4,
 };
 
 export function createGraphLayer(world) {

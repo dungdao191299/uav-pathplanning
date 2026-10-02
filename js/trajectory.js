@@ -162,7 +162,7 @@ export function bindTrajectoryControls(world, data) {
 
   function solve() {
     solveButton.disabled = true;
-    downloadButton.disabled = true;
+    if (downloadButton) downloadButton.disabled = true;
     try {
       // Đọc lại input mỗi lần Solve; không thay đổi điểm mặc định trong graph.
       const points = Object.fromEntries(['start', 'end'].map(name => [name,
@@ -195,7 +195,7 @@ export function bindTrajectoryControls(world, data) {
         );
       }
       status.textContent = lines.join('\n');
-      downloadButton.disabled = false;
+      if (downloadButton) downloadButton.disabled = false;
     } catch (error) {
       status.textContent = `Could not solve: ${error.message}`;
     } finally {
@@ -205,7 +205,7 @@ export function bindTrajectoryControls(world, data) {
   solveButton.onclick = solve;
 
   // Xuất cả cấu hình và graph để có thể kiểm tra lại nghiệm ngoài trình duyệt.
-  downloadButton.onclick = () => {
+  if (downloadButton) downloadButton.onclick = () => {
     const payload = {
       case: data.caseName,
       configurationSource: data.configurationSource,

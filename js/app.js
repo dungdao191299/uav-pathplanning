@@ -18,7 +18,7 @@ try {
       bindTrajectoryControls(view.world, data);
     }).catch(error => {
       document.getElementById('graphStatus').textContent = `Could not load graph: ${error.message}`;
-      document.getElementById('caseStatus').textContent = 'Case data unavailable.';
+      // document.getElementById('caseStatus').textContent = 'Case data unavailable.';
       document.getElementById('solveCase').disabled = true;
     }),
     // bindControls gọi loadWind(path) khi đổi slice và vẽ bằng createWindLayer.
