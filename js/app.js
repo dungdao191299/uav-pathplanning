@@ -14,8 +14,9 @@ try {
   // 2. Gió và graph tải độc lập. Solver cần graph đã tải xong.
   await Promise.all([
     loadGraph().then(data => {
-      bindGraphControls(createGraphLayer(view.world), data);
-      bindTrajectoryControls(view.world, data);
+      const graph = createGraphLayer(view.world);
+      bindGraphControls(graph, data);
+      bindTrajectoryControls(view.world, data, { graphLayer: graph });
     }).catch(error => {
       document.getElementById('graphStatus').textContent = `Could not load graph: ${error.message}`;
       // document.getElementById('caseStatus').textContent = 'Case data unavailable.';

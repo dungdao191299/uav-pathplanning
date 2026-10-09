@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Starting · UAV Pathplanning</title>
+    <link rel="stylesheet" href="../style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "../vendor/three.js",
+          "three/addons/controls/OrbitControls.js": "../vendor/OrbitControls.js",
+          "three/addons/loaders/GLTFLoader.js": "../vendor/loaders/GLTFLoader.js"
+        }
+      }
+    </script>
+  </head>
+  <body class="starting-page">
+    <header>
+      <div class="brand"><span class="mark">↗</span>UAV Pathplanning</div>
+      <nav aria-label="Pages">
+        <a href="../">Demo</a>
+        <a href="./" aria-current="page">Starting</a>
+      </nav>
+    </header>
+    <main>
+      <aside>
+        <details open>
+          <summary><span>01</span>Load data</summary>
+          <form id="loadData">
+            <label>
+              3D building
+              <input id="buildingFile" type="file" accept=".npy,.npz" required />
+            </label>
+            <label>
+              Wind field
+              <input id="windFile" type="file" accept=".npy,.npz" required />
+            </label>
+            <label>
+              Swap axes
+              <select id="swapAxes">
+                <option value="0,1,2">None · XYZ</option>
+                <option value="1,0,2">X ↔ Y</option>
+                <option value="2,1,0">X ↔ Z</option>
+                <option value="0,2,1">Y ↔ Z</option>
+              </select>
+            </label>
+            <button id="loadFiles" type="submit">Load data</button>
+          </form>
+          <div id="uploadStatus" role="status" aria-live="polite">Choose both files to begin.</div>
+          <pre id="dataSummary"></pre>
+        </details>
+        <details>
+          <summary><span>02</span>Generate graph</summary>
+          <form id="graphGenerate">
+            <label>Wind threshold (% of mean speed)
+              <input id="thresholdPercentage" type="number" min="0" step="any" value="20" required />
+            </label>
+            <label>Minimum box X / Y / Z
+              <input id="minX" type="number" min="0.001" step="any" value="50" required aria-label="Minimum box X" />
+              <input id="minY" type="number" min="0.001" step="any" value="50" required aria-label="Minimum box Y" />
+              <input id="minZ" type="number" min="0.001" step="any" value="20" required aria-label="Minimum box Z" />
+            </label>
+            <label>Minimum box unit
+              <select id="minUnit"><option value="voxel">Voxel</option><option value="meter">Meter</option></select>
+            </label>
+            <label>Partition voxel size X / Y / Z (m)
+              <input id="voxelX" type="number" min="0.001" step="any" value="1" required aria-label="Voxel size X" />
+              <input id="voxelY" type="number" min="0.001" step="any" value="1" required aria-label="Voxel size Y" />
+              <input id="voxelZ" type="number" min="0.001" step="any" value="1" required aria-label="Voxel size Z" />
+            </label>
+            <label>TI window (odd voxels)
+              <input id="skeletonWindow" type="number" min="1" step="2" value="11" required />
+            </label>
+            <label>Merge radius (voxels)
+              <input id="mergeRadius" type="number" min="0.001" step="any" value="15" required />
+            </label>
+            <label>Skeleton connection radius (voxels)
+              <input id="skeletonRadius" type="number" min="0.001" step="any" value="100" required />
+            </label>
+            <label>Bridge radius (voxels)
+              <input id="bridgeRadius" type="number" min="0.001" step="any" value="50" required />
+            </label>
+            <label>Neighbors
+              <input id="neighbors" type="number" min="1" step="1" value="5" required />
+            </label>
+            <button id="generateGraph" type="submit" disabled>Generate graph</button>
+          </form>
+          <div id="graphStatus" role="status" aria-live="polite"></div>
+          <div class="graph-key">
+            <span style="color: #3bcfdd">● Adaptive</span>
+            <span style="color: #ff5fc8">● Skeleton</span>
+            <span style="color: #ffb347">● Bridge</span>
+          </div>
+        </details>
+        <details id="pathPlanning">
+          <summary><span>03</span>Path planning</summary>
+          <fieldset class="point-inputs">
+            <legend>Start (X, Y, Z · voxel)</legend>
+            <input id="start-x" type="number" step="any" aria-label="Start X" placeholder="X" required disabled />
+            <input id="start-y" type="number" step="any" aria-label="Start Y" placeholder="Y" required disabled />
+            <input id="start-z" type="number" step="any" aria-label="Start Z" placeholder="Z" required disabled />
+          </fieldset>
+          <fieldset class="point-inputs">
+            <legend>End (X, Y, Z · voxel)</legend>
+            <input id="end-x" type="number" step="any" aria-label="End X" placeholder="X" required disabled />
+            <input id="end-y" type="number" step="any" aria-label="End Y" placeholder="Y" required disabled />
+            <input id="end-z" type="number" step="any" aria-label="End Z" placeholder="Z" required disabled />
+          </fieldset>
+          <label class="toggle">
+            <span>Turning angle limit</span>
+            <input id="constraint-turningAngle" type="checkbox" disabled />
+          </label>
+          <label class="toggle">
+            <span>Start → End angle &lt;90°</span>
+            <input id="constraint-trajectoryAngle" type="checkbox" disabled />
+          </label>
+          <label class="toggle">
+            <span>Thrust limit</span>
+            <input id="constraint-thrust" type="checkbox" disabled />
+          </label>
+          <label class="toggle">
+            <span>Trajectory</span>
+            <input id="case-trajectory" type="checkbox" checked disabled />
+          </label>
+          <label class="toggle">
+            <span>Expanded graph</span>
+            <input id="case-expanded" type="checkbox" disabled />
+          </label>
+          <label class="toggle">
+            <span>Animate drone</span>
+            <input id="case-drone" type="checkbox" disabled />
+          </label>
+          <button id="solveCase" type="button" disabled>Solve Dijkstra</button>
+          <div id="caseStatus" role="status" aria-live="polite">Generate a graph first.</div>
+        </details>
+        <details>
+          <summary><span>04</span>Display</summary>
+          <label class="toggle">
+            <span>Wind field</span>
+            <input id="wind" type="checkbox" checked disabled />
+          </label>
+          <label>
+            View mode
+            <select id="mode" disabled>
+              <option value="slice">Slice</option>
+              <option value="volume">Full 3D domain</option>
+            </select>
+          </label>
+          <label>
+            Scale (X × Y × Z)
+            <select id="scale" disabled>
+              <option value="1,1,1">Original (1 × 1 × 1)</option>
+              <option value="4,4,1.5">Scaled (4 × 4 × 1.5)</option>
+            </select>
+          </label>
+          <label>
+            Slice axis
+            <select id="axis" disabled>
+              <option value="0">X</option>
+              <option value="1">Y</option>
+              <option value="2" selected>Z</option>
+            </select>
+          </label>
+          <label class="range-label">
+            Slice position
+            <output id="layerValue">20</output>
+            <input id="layer" type="range" min="0" max="159" value="20" disabled />
+          </label>
+          <label class="range-label">
+            Sampling step
+            <output id="stepValue">8 cells</output>
+            <input id="step" type="range" min="4" max="24" step="4" value="8" disabled />
+          </label>
+          <label class="range-label">
+            Arrow length
+            <output id="lengthValue">6 cells</output>
+            <input id="length" type="range" min="2" max="15" value="6" disabled />
+          </label>
+        </details>
+      </aside>
+      <div id="viewport" aria-label="Interactive uploaded 3D space">
+        <div class="view-actions">
+          <button id="home" type="button" disabled>↺ Reset view</button>
+          <button id="top" type="button" disabled>Top view</button>
+        </div>
+        <div class="legend">
+          <div><span>Velocity magnitude</span></div>
+          <div class="gradient"></div>
+          <div><span>0</span><span id="speedMax">—</span></div>
+        </div>
+        <div class="navigation">Drag to orbit · Scroll to zoom · Right-drag to pan</div>
+      </div>
+    </main>
+    <script type="module">
+      import { bindStartingPage } from '../js/starting.js';
+      bindStartingPage();
+    </script>
+  </body>
+</html>

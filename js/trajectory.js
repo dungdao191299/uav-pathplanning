@@ -202,7 +202,7 @@ export function plotTrajectory(world, trajectory, expandedGraph = null) {
 }
 
 /** UI chỉ gọi solveDijkstra(points, data), rồi plotTrajectory(); không tự load data. */
-export function bindTrajectoryControls(world, data) {
+export function bindTrajectoryControls(world, data, { autoSolve = true, graphLayer = null } = {}) {
   const element = id => document.getElementById(id);
   const status = element('caseStatus');
   const solveButton = element('solveCase');
@@ -250,6 +250,7 @@ export function bindTrajectoryControls(world, data) {
       layer = plotTrajectory(world, result.trajectory, result.expandedGraph);
       syncVisibility();
       layer.setFlying(element('case-drone').checked);
+      graphLayer?.setMuted(result.status === 'ok');
 
       const graph = result.expandedGraph;
       const lines = [
@@ -290,5 +291,13 @@ export function bindTrajectoryControls(world, data) {
     URL.revokeObjectURL(url);
   };
 
-  solve();
+  if (autoSolve) solve();
+  return {
+    clear() {
+      layer?.clear(); layer = null; result = null;
+      graphLayer?.setMuted(false);
+      status.textContent = '';
+      if (downloadButton) downloadButton.disabled = true;
+    },
+  };
 }

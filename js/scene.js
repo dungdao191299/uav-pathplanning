@@ -57,12 +57,13 @@ export function createScene(viewport, { meta, object: building }) {
     home();
   }
 
-  new ResizeObserver(() => {
+  const resizeObserver = new ResizeObserver(() => {
     const { width, height } = viewport.getBoundingClientRect();
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     renderer.setSize(width, height);
-  }).observe(viewport);
+  });
+  resizeObserver.observe(viewport);
 
   home();
   renderer.setAnimationLoop(() => {
@@ -70,5 +71,23 @@ export function createScene(viewport, { meta, object: building }) {
     renderer.render(scene, camera);
   });
 
-  return { world, building, home, setScale };
+  function dispose() {
+    renderer.setAnimationLoop(null);
+    resizeObserver.disconnect();
+    controls.dispose();
+    const geometries = new Set(), materials = new Set();
+    scene.traverse(object => {
+      if (object.geometry) geometries.add(object.geometry);
+      if (object.material) {
+        for (const material of Array.isArray(object.material) ? object.material : [object.material]) materials.add(material);
+      }
+      if (object.isInstancedMesh) object.dispose();
+    });
+    geometries.forEach(geometry => geometry.dispose());
+    materials.forEach(material => material.dispose());
+    renderer.dispose();
+    renderer.domElement.remove();
+  }
+
+  return { world, building, home, setScale, dispose };
 }

@@ -1,7 +1,7 @@
 // Dựng graph trạng thái theo case_all_dijkstra_expand.ipynb.
 // Đầu vào: nodes XYZ theo voxel, edges là cặp chỉ số node.
 // Đầu ra: graph có trọng số năng lượng (J), không dùng khoảng cách làm trọng số.
-const VOXEL_SIZE_METERS = [4, 4, 1.5];
+export const VOXEL_SIZE_METERS = Object.freeze([4, 4, 1.5]);
 
 // Chỉ dùng để tách out/in khi HIỂN THỊ graph expand.
 // Không thay đổi độ dài cạnh bay hay công thức tính năng lượng.
@@ -31,6 +31,13 @@ const FLIGHT_PARAMETERS = {
   Pp_hover: 65,
   g_acc: [0, 0, -9.81],
 };
+
+// config.json defaults for case 1; flightPower retains get_energy's own constants.
+export const SOLVER_DEFAULTS = Object.freeze({
+  speed: 15,
+  parameters: Object.freeze({ ...FLIGHT_PARAMETERS, g_acc: Object.freeze([0, 0, -9.81]),
+    dt: 4, dt_takeoff: 4, dt_landing: 4, Tmax: 70, angle_threshold: 60 }),
+});
 
 /** Công suất (W) và lực đẩy (N) cho rẽ/cất/hạ cánh; dùng drone_params từ config. */
 export function dronePower(velocity, wind, acceleration, parameters) {
@@ -109,7 +116,12 @@ export function maneuver(incomingFlight, outgoingFlight, parameters) {
   };
 }
 
-/** Tạo các cạnh bay có hướng, trạng thái out/in và liên kết rẽ/cất/hạ cánh. */
+/**
+ * Input: data={nodes:Point[],edges:[i,j][]}, input={speed,parameters,flightWind,transitionWind}.
+ * Optional input.start_point/end_point add S/T, takeoff/landing and endpoint filters.
+ * Without them, return all out/in states and flight/maneuver edges; start/end=null.
+ * Output edges={from,to,kind,weight,...}, with directed energy weight in Joules.
+ */
 export function buildExpandedGraph(data, input, options = {}) {
   const constraints = { turningAngle: false, trajectoryAngle: false, thrust: false, ...options };
   if (!Object.values(constraints).every(value => typeof value === 'boolean')) {
@@ -118,14 +130,16 @@ export function buildExpandedGraph(data, input, options = {}) {
   const parameters = input.parameters;
   const speed = input.speed;
   const isVector3 = value => Array.isArray(value) && value.length === 3 && value.every(Number.isFinite);
+  const hasEndpoints = input.start_point !== undefined || input.end_point !== undefined;
+  if (constraints.trajectoryAngle && !hasEndpoints) throw new Error('Trajectory angle requires start/end points.');
 
   // Kiểm tra dữ liệu JSON trước khi chia độ dài/thời gian hoặc tính năng lượng.
   const positiveValues = [
     speed, parameters.rho, parameters.Cd, parameters.Af, parameters.m,
     parameters.A, parameters.Tmax, parameters.dt_takeoff, parameters.dt_landing,
   ];
-  const validVectors = data.nodes.length > 0 && data.nodes.every(isVector3) &&
-    isVector3(input.start_point) && isVector3(input.end_point) &&
+  const validVectors = data.nodes.every(isVector3) &&
+    (!hasEndpoints || (data.nodes.length > 0 && isVector3(input.start_point) && isVector3(input.end_point))) &&
     isVector3(parameters.g_acc) && vectorLength(parameters.g_acc) > 0;
   const validParameters = positiveValues.every(value => Number.isFinite(value) && value > 0) &&
     Number.isFinite(parameters.Pp_hover) && parameters.Pp_hover >= 0 &&
@@ -149,9 +163,9 @@ export function buildExpandedGraph(data, input, options = {}) {
     return bestIndex;
   }
 
-  const start = nearestNodeIndex(input.start_point);
-  const end = nearestNodeIndex(input.end_point);
-  if (start === end) {
+  const start = hasEndpoints ? nearestNodeIndex(input.start_point) : null;
+  const end = hasEndpoints ? nearestNodeIndex(input.end_point) : null;
+  if (hasEndpoints && start === end) {
     // Hai điểm dùng chung node gần nhất: không cần tìm đường bên trong graph.
     return {
       nodes: [{ kind: 'start', position: data.nodes[start] }, { kind: 'end', position: data.nodes[end] }],
@@ -161,7 +175,7 @@ export function buildExpandedGraph(data, input, options = {}) {
       endOffset: vectorLength(subtractVectors(input.end_point, data.nodes[end])),
     };
   }
-  const heading = subtractVectors(toMeters(data.nodes[end]), toMeters(data.nodes[start]));
+  const heading = hasEndpoints ? subtractVectors(toMeters(data.nodes[end]), toMeters(data.nodes[start])) : null;
 
   // 2. Checkbox chỉ bật/tắt bộ lọc; công thức năng lượng luôn được tính.
   const flights = [];
@@ -173,6 +187,7 @@ export function buildExpandedGraph(data, input, options = {}) {
     for (const [u, v] of [pair, [...pair].reverse()]) {
       const delta = subtractVectors(toMeters(data.nodes[v]), toMeters(data.nodes[u]));
       const length = vectorLength(delta);
+      if (!length) throw new Error('Graph edges must have distinct positions.');
       const velocity = scaleVector(delta, speed / length);
       const powers = [u, v].map(index => flightPower(velocity, input.flightWind[index]));
       const maximumThrust = Math.max(...powers.map(sample => sample.thrust));
@@ -192,11 +207,12 @@ export function buildExpandedGraph(data, input, options = {}) {
     }
   }
 
-  // 3. ID 0 là S, ID 1 là T. Flight i có out=2+2*i và in=3+2*i.
-  const nodes = [
+  // Without endpoints, keep every directed flight/turn and omit S/T and terminal links.
+  const stateOffset = hasEndpoints ? 2 : 0;
+  const nodes = hasEndpoints ? [
     { kind: 'start', position: data.nodes[start] },
     { kind: 'end', position: data.nodes[end] },
-  ];
+  ] : [];
   const edges = [];
   const incoming = new Map();
   const outgoing = new Map();
@@ -216,7 +232,7 @@ export function buildExpandedGraph(data, input, options = {}) {
   for (const [flightIndex, flight] of flights.entries()) {
     const startPoint = data.nodes[flight.u];
     const endPoint = data.nodes[flight.v];
-    const outState = 2 + flightIndex * 2;
+    const outState = stateOffset + flightIndex * 2;
     const inState = outState + 1;
 
     // Tọa độ sơ đồ 15%/85% giúp thấy rõ hai trạng thái tại cùng junction.
@@ -266,8 +282,8 @@ export function buildExpandedGraph(data, input, options = {}) {
           removed++;
           continue;
         }
-        const arrivalState = 3 + arrivalIndex * 2;
-        const departureState = 2 + departureIndex * 2;
+        const arrivalState = stateOffset + 1 + arrivalIndex * 2;
+        const departureState = stateOffset + departureIndex * 2;
         addEdge(arrivalState, departureState, 'maneuver', turn.weight, undefined, turn);
       }
     }
@@ -275,8 +291,8 @@ export function buildExpandedGraph(data, input, options = {}) {
 
   return {
     nodes, edges, flights, start, end, removed, constraints,
-    startOffset: vectorLength(subtractVectors(input.start_point, data.nodes[start])),
-    endOffset: vectorLength(subtractVectors(input.end_point, data.nodes[end])),
+    startOffset: hasEndpoints ? vectorLength(subtractVectors(input.start_point, data.nodes[start])) : null,
+    endOffset: hasEndpoints ? vectorLength(subtractVectors(input.end_point, data.nodes[end])) : null,
   };
 }
 

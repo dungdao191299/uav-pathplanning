@@ -7,8 +7,8 @@ const GRAPH_STYLE = {
   boxOpacity: 0.1,
   nodeColor: 0xb4f277,
   nodeSize: 2,
-  edgeColors: [0x3bcfdd, 0x3bcfdd, 0x3bcfdd],
-  edgeOpacity: 0.4,
+  edgeColors: [0x3bcfdd, 0xff5fc8, 0xffb347],
+  edgeOpacity: 0.8,
 };
 
 export function createGraphLayer(world) {
@@ -93,7 +93,19 @@ export function createGraphLayer(world) {
     if (layer) layer.visible = visible;
   }
 
-  return { draw, setVisible };
+  function setMuted(enabled) {
+    const edges = group.getObjectByName('edges');
+    const nodes = group.getObjectByName('nodes');
+    if (edges) {
+      edges.material.vertexColors = !enabled;
+      edges.material.color.set(enabled ? 0x808080 : 0xffffff);
+      edges.material.opacity = enabled ? 0.3 : GRAPH_STYLE.edgeOpacity;
+      edges.material.needsUpdate = true;
+    }
+    if (nodes) nodes.material.color.set(enabled ? 0x808080 : GRAPH_STYLE.nodeColor);
+  }
+
+  return { draw, setVisible, setMuted };
 }
 
 // Chỉ vẽ/gắn UI với dữ liệu loadGraph() đã trả về; không gọi fetch.

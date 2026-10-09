@@ -33,6 +33,38 @@ header {
   letter-spacing: 2px;
 }
 
+header a {
+  color: #b4f277;
+  font-size: 12px;
+}
+
+header nav {
+  display: flex;
+  gap: 18px;
+}
+
+header a[aria-current=page] {
+  color: #e2eaf3;
+  text-decoration: none;
+  border-bottom: 2px solid #b4f277;
+  padding-bottom: 5px;
+}
+
+.starting-page input[type=file] {
+  display: block;
+  width: 100%;
+  margin: 14px 0;
+  font: inherit;
+}
+
+#uploadStatus, #dataSummary {
+  margin: 20px 0;
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
 .mark {
   display: grid;
   place-items: center;
@@ -352,6 +384,14 @@ button:focus-visible,select:focus-visible,input:focus-visible {
     bottom: 20px;
   }
 
+}
+
+.graph-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 12px;
 }
 
 #graphStatus {

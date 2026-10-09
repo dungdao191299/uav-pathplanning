@@ -21,6 +21,10 @@
         <span class="mark"> ↗ </span>
         UAV Pathplanning
       </div>
+      <nav aria-label="Pages">
+        <a href="./" aria-current="page">Demo</a>
+        <a href="./starting/">Starting</a>
+      </nav>
     </header>
     <main>
       <aside>
@@ -46,6 +50,11 @@
             <input id="graph-edges" type="checkbox" checked />
           </label>
           <div id="graphStatus" role="status" aria-live="polite">Loading saved graph…</div>
+          <div class="graph-key">
+            <span style="color: #3bcfdd">● Adaptive</span>
+            <span style="color: #ff5fc8">● Skeleton</span>
+            <span style="color: #ffb347">● Bridge</span>
+          </div>
           <label>
             View mode
             <select id="mode">
